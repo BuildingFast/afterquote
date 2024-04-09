@@ -1,0 +1,682 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // NOTE: When using postgresql, mysql or sqlserver, uncomment the @db.Text annotations in model Account below
+  // Further reading:
+  // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
+  // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
+  url      = env("DATABASE_URL")
+}
+
+model Example {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Necessary for Next auth
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? // @db.Text
+  access_token      String? // @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? // @db.Text
+  session_state     String?
+  ext_expires_in    Int?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                 String               @id @default(cuid())
+  name               String?
+  email              String?              @unique
+  emailVerified      DateTime?
+  image              String?
+  accounts           Account[]
+  sessions           Session[]
+  rfqs               Rfq[]
+  salesOrders        SalesOrder[]
+  salesPersonRfqs    Rfq[]                @relation("SalesPersonRfqs")
+  estimatorRfqs      Rfq[]                @relation("EstimatorRfqs")
+  organization       Organization?        @relation("OrganizationMembers", fields: [organizationId], references: [id])
+  organizationId     String?
+  role               UserRole             @default(MEMBER)
+  comments           Comment[]
+  customers          Customer[]
+  quoteLineItems     QuoteLineItem[]
+  orderLineItems     OrderLineItem[]
+  notifications      Notification[]
+  contactsCreated    Contact[]
+  costingRawMaterial CostingRawMaterial[]
+  costingOperations  CostingOperations[]
+  costingTooling     CostingTooling[]
+  taxes              Taxes[]
+  qualityRejection   QualityRejection[]
+  isCustomer         Boolean              @default(false)
+  organizationList   String[]
+  ProductsCatalog    ProductsCatalog[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Organization {
+  id                         String               @id @default(cuid())
+  name                       String
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+  users                      User[]               @relation("OrganizationMembers")
+  invitations                Invitation[]
+  rfqs                       Rfq[]
+  salesOrders                SalesOrder[]
+  comments                   Comment[]
+  customers                  Customer[]
+  quoteLineItems             QuoteLineItem[]
+  orderLineItems             OrderLineItem[]
+  quoteFiles                 QuoteFile[]
+  taxes                      Taxes[]
+  salesOrderFiles            SalesOrderFile[]
+  rfqCustomFieldSchema       Json?
+  orderCustomFieldSchema     Json?                @db.Json
+  orderStatusOptions         String[]             @default(["Backlog", "In progress", "Shipped", "Delivered", "Completed", "Hold"])
+  contactsCustomFieldSchema  Json?
+  companiesCustomFieldSchema Json?
+  checkListSchema            String[]
+  formWidgetId               String?
+  notifications              Notification[]
+  contacts                   Contact[]
+  isCustomer                 Boolean              @default(false)
+  associatedCustomer         Customer?            @relation("OrganizationForCustomer", fields: [associatedCustomerId], references: [id])
+  associatedCustomerId       String?
+  costingRawMaterial         CostingRawMaterial[]
+  costingOperation           CostingOperations[]
+  costingTooling             CostingTooling[]
+  currency                   String               @default("USD")
+  addressOne                 String?
+  addressTwo                 String?
+  addressCity                String?
+  addressState               String?
+  addressZip                 String?
+  addressCountry             String?
+  OperationsCatalog          OperationsCatalog[]
+  MachineCatalog             MachineCatalog[]
+  MaterialCatalog            MaterialCatalog[]
+  ProcessesCatalog           ProcessesCatalog[]
+  qualityRejection           QualityRejection[]
+  materialCostingFields      Json?
+  materialCostingFormula     Json?
+  ProductsCatalog            ProductsCatalog[]
+}
+
+model Invitation {
+  id                   Int                    @id @default(autoincrement())
+  email                String
+  token                String                 @unique
+  organization         Organization           @relation(fields: [organizationId], references: [id])
+  organizationId       String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  status               InviteStatus           @default(PENDING)
+  isCustomer           Boolean                @default(false)
+  contactId            String?
+  invitationEmailSends InvitationEmailSends[]
+
+  @@unique([organizationId, email], name: "emailInviteIdentifier")
+}
+
+model InvitationEmailSends {
+  id           Int          @id @default(autoincrement())
+  email        String
+  invitation   Invitation   @relation(fields: [invitationId], references: [id])
+  invitationId Int
+  emailService String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  status       InviteStatus @default(PENDING)
+}
+
+model QualityRejection {
+  id                  String       @id @default(cuid())
+  serialNumber        Int          @default(autoincrement())
+  rollNumber          String
+  customer            String
+  dateOfRejection     DateTime
+  actualWidth         Decimal      @db.Decimal(12, 4)
+  actualLength        Decimal      @db.Decimal(12, 4)
+  qualityDecision     String
+  qualityObservation  String
+  disposableMaterials String?
+  finalStatus         String?
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  organizationId      String
+  user                User?        @relation(fields: [userId], references: [id])
+  userId              String?
+  submittedBy         String?
+  shiftNumber         String
+}
+
+model Rfq {
+  id                   String           @id @default(cuid())
+  rfqNumber            String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  updatedById          String?
+  dateReceived         DateTime?
+  responseDate         DateTime?
+  dueDate              DateTime?
+  notes                String?
+  addressOne           String?
+  addressTwo           String?
+  addressZip           String?
+  addressState         String?
+  city                 String?
+  country              String?
+  organization         Organization     @relation(fields: [organizationId], references: [id])
+  organizationId       String
+  user                 User             @relation(fields: [userId], references: [id])
+  userId               String
+  comments             Comment[]
+  customer             Customer         @relation(fields: [customerId], references: [id])
+  customerId           String
+  quoteLineItems       QuoteLineItem[]
+  quoteFiles           QuoteFile[]
+  customFields         Json?
+  checkList            Json?
+  rfqVisibleToCustomer Boolean          @default(false)
+  email                Email[]
+  status               RfqStatus        @default(BACKLOG)
+  priority             RfqPriority      @default(No)
+  salesPerson          User?            @relation("SalesPersonRfqs", fields: [salesPersonId], references: [id])
+  salesPersonId        String?
+  estimator            User?            @relation("EstimatorRfqs", fields: [estimatorId], references: [id])
+  estimatorId          String?
+  notifications        Notification[]
+  salesOrder           SalesOrder[]
+  converted            Boolean          @default(false)
+  currency             String?
+  orderValue           Decimal?         @db.Decimal(12, 4)
+  deleted              DateTime?
+  ProductsCatalog      ProductsCatalog? @relation(fields: [productsCatalogId], references: [id])
+  productsCatalogId    String?
+
+  @@unique([rfqNumber, organizationId])
+}
+
+model SalesOrder {
+  id                String           @id @default(cuid())
+  poNumber          String?
+  invoiceNumber     String?
+  customerPoNumber  String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  updatedById       String?
+  dateReceived      DateTime?
+  dueDate           DateTime?
+  notes             String?
+  addressOne        String?
+  addressTwo        String?
+  addressZip        String?
+  addressState      String?
+  city              String?
+  country           String?
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  organizationId    String
+  user              User             @relation(fields: [userId], references: [id])
+  userId            String
+  comments          Comment[]
+  customer          Customer         @relation(fields: [customerId], references: [id])
+  customerId        String
+  salesOrderFiles   SalesOrderFile[]
+  orderLineItems    OrderLineItem[]
+  customFields      Json?
+  checkList         Json?
+  visibleToCustomer Boolean          @default(false)
+  orderStatus       String?
+  paymentStatus     String?
+  priority          OrderPriority    @default(No)
+  notifications     Notification[]
+  currency          String?
+  orderValue        Decimal?         @db.Decimal(12, 4)
+  deleted           DateTime?
+  createdFromRfq    Rfq?             @relation(fields: [createdFromRfqId], references: [id])
+  createdFromRfqId  String?
+  enablePublicShare Boolean          @default(false)
+  piNumber          String?
+  piDate            DateTime?
+  ProductsCatalog   ProductsCatalog? @relation(fields: [productsCatalogId], references: [id])
+  productsCatalogId String?
+}
+
+model SalesOrderFile {
+  id                  String       @id @default(cuid())
+  storageService      String
+  storageFileName     String
+  humanFileName       String
+  s3Bucket            String?
+  storageUrl          String?
+  belongsToSalesOrder SalesOrder?  @relation(fields: [salesOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  salesOrderId        String?
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  organizationId      String
+  visibleToCustomer   Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @default(now()) @updatedAt
+  deletedAt           DateTime?
+}
+
+model QuoteFile {
+  id                String         @id @default(cuid())
+  storageService    String
+  storageFileName   String
+  humanFileName     String
+  s3Bucket          String?
+  storageUrl        String?
+  belongsToRfq      Rfq?           @relation(fields: [rfqId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  rfqId             String?
+  organization      Organization   @relation(fields: [organizationId], references: [id])
+  organizationId    String
+  visibleToCustomer Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @default(now()) @updatedAt
+  deletedAt         DateTime?
+  quoteLineItem     QuoteLineItem?
+}
+
+model QuoteLineItem {
+  id                 String               @id @default(cuid())
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  partName           String
+  partDetails        String?
+  partNumber         String?
+  partCost           Decimal?             @db.Decimal(12, 4)
+  partQuantity       Decimal?             @db.Decimal(12, 4)
+  partProcess        String?
+  partMaterial       String?
+  partFinish         String?
+  organization       Organization         @relation(fields: [organizationId], references: [id])
+  organizationId     String
+  user               User                 @relation(fields: [userId], references: [id])
+  userId             String
+  rfq                Rfq                  @relation(fields: [rfqId], references: [id])
+  rfqId              String
+  costingRawMaterial CostingRawMaterial[]
+  costingOperations  CostingOperations[]
+  costingTooling     CostingTooling[]
+  totalCost          Int?
+  quotePrimaryFile   QuoteFile?           @relation(fields: [quotePrimaryFileId], references: [id])
+  quotePrimaryFileId String?              @unique
+  process            ProcessesCatalog?    @relation(fields: [processId], references: [id])
+  processId          String?
+}
+
+model OrderLineItem {
+  id             String       @id @default(cuid())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  partName       String
+  partDetails    String?
+  partNumber     String?
+  partCost       Decimal?     @db.Decimal(12, 4)
+  partQuantity   Decimal?     @db.Decimal(12, 4)
+  partProcess    String?
+  partMaterial   String?
+  partFinish     String?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  salesOrder     SalesOrder   @relation(fields: [salesOrderId], references: [id])
+  salesOrderId   String
+}
+
+model CompanyAddress {
+  id                String    @id @default(cuid())
+  addressOne        String?
+  addressTwo        String?
+  addressCity       String?
+  addressState      String?
+  addressZip        String?
+  addressCountry    String?
+  isShippingAddress Boolean   @default(false)
+  isBillingAddress  Boolean   @default(false)
+  Customer          Customer? @relation(fields: [customerId], references: [id])
+  customerId        String?
+}
+
+model CostingRawMaterial {
+  id              String        @id @default(cuid())
+  quoteLineItem   QuoteLineItem @relation(fields: [quoteLineItemId], references: [id], onDelete: Cascade)
+  quoteLineItemId String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  organizationId  String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  materialName    String
+  user            User?         @relation(fields: [createdByUserId], references: [id])
+  createdByUserId String?
+  costingJson     Json?
+  unitCost        Int?
+  materialMarkup  Int?
+}
+
+model CostingOperations {
+  id               String        @id @default(cuid())
+  quoteLineItem    QuoteLineItem @relation(fields: [quoteLineItemId], references: [id], onDelete: Cascade)
+  quoteLineItemId  String
+  organization     Organization  @relation(fields: [organizationId], references: [id])
+  organizationId   String
+  operationName    String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  user             User?         @relation(fields: [createdByUserId], references: [id])
+  createdByUserId  String?
+  setUpTimeMinutes Decimal?      @db.Decimal(12, 4)
+  runTimeMinutes   Decimal?      @db.Decimal(12, 4)
+  rate             Decimal?      @db.Decimal(12, 4)
+}
+
+model CostingTooling {
+  id               String        @id @default(cuid())
+  quoteLineItem    QuoteLineItem @relation(fields: [quoteLineItemId], references: [id], onDelete: Cascade)
+  quoteLineItemId  String
+  organization     Organization  @relation(fields: [organizationId], references: [id])
+  organizationId   String
+  name             String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  user             User?         @relation(fields: [createdByUserId], references: [id])
+  createdByUserId  String?
+  setUpTimeMinutes Decimal?      @db.Decimal(12, 4)
+  runTimeMinutes   Decimal?      @db.Decimal(12, 4)
+  rate             Decimal?      @db.Decimal(12, 4)
+  toolingLength    Decimal?      @db.Decimal(12, 4)
+  toolingWidth     Decimal?      @db.Decimal(12, 4)
+  toolingHeight    Decimal?      @db.Decimal(12, 4)
+  toolingWeight    Decimal?      @db.Decimal(12, 4)
+  toolingFactor    Decimal?      @default(1.0) @db.Decimal(12, 4)
+}
+
+enum Technologies {
+  OneK
+  TwoK
+  Mech
+}
+
+enum BusinessUnit {
+  OneK
+  TwoK
+  Mech
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum RfqStatus {
+  BACKLOG
+  PROGRESS
+  HOLD
+  COMPLETED
+  ORDERPLACED
+}
+
+enum RfqPriority {
+  No
+  Urgent
+  Low
+  Medium
+  High
+}
+
+enum OrderPriority {
+  No
+  Urgent
+  Low
+  Medium
+  High
+}
+
+model Comment {
+  id             String       @unique @default(uuid())
+  body           String       @db.Text
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  rfq            Rfq?         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  rfqId          String?
+  salesOrder     SalesOrder?  @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  salesOrderId   String?
+  children       Comment[]    @relation("comment_children")
+  parent         Comment?     @relation("comment_children", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentId       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Customer {
+  id                    String           @id @default(cuid())
+  createdAt             DateTime         @default(now())
+  companyName           String
+  organization          Organization     @relation(fields: [organizationId], references: [id])
+  organizationId        String
+  user                  User             @relation(fields: [userId], references: [id])
+  userId                String
+  contacts              Contact[]
+  rfqs                  Rfq[]
+  salesOrders           SalesOrder[]
+  customFields          Json?
+  customerPortalEnabled Boolean          @default(false)
+  associatedCustomerOrg Organization[]   @relation("OrganizationForCustomer")
+  companyAddresses      CompanyAddress[]
+}
+
+model Contact {
+  id               String       @id @default(cuid())
+  createdAt        DateTime     @default(now())
+  contactFirstName String
+  contactLastName  String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  organizationId   String
+  customer         Customer?    @relation(fields: [customerId], references: [id])
+  customerId       String?
+  contactNumber    String?
+  contactEmail     String?
+  contactNotes     String?
+  customFields     Json?
+  user             User?        @relation(fields: [createdByuserId], references: [id])
+  createdByuserId  String?
+  deleted          DateTime?
+}
+
+model Email {
+  id           String  @id @default(cuid())
+  rfqId        String?
+  rfq          Rfq?    @relation(fields: [rfqId], references: [id])
+  emailSubject String
+  emailText    String
+}
+
+model Notification {
+  id             String              @id @default(cuid())
+  message        String
+  read           Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User                @relation(fields: [userId], references: [id])
+  userId         String
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  organizationId String
+  purpose        NotificationPurpose
+  rfq            Rfq?                @relation(fields: [rfqId], references: [id])
+  rfqId          String?
+  salesOrder     SalesOrder?         @relation(fields: [salesOrderId], references: [id])
+  salesOrderId   String?
+}
+
+model MachineCatalog {
+  id             String                 @id @default(cuid())
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  organizationId String
+  name           String
+  rate           Int?
+  operations     OperationsOnMachines[]
+  processMachine ProcessMachine[]
+}
+
+model OperationsCatalog {
+  id             String                 @id @default(cuid())
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  organizationId String
+  name           String
+  rate           Int?
+  toolingRate    Int?
+  machines       OperationsOnMachines[]
+}
+
+model ProcessesCatalog {
+  id               String            @id @default(cuid())
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  organizationId   String
+  name             String
+  quoteLineItems   QuoteLineItem[]
+  processMachines  ProcessMachine[]
+  processMaterials ProcessMaterial[]
+  deleted          DateTime?
+}
+
+model ProcessMachine {
+  process   ProcessesCatalog @relation(fields: [processId], references: [id])
+  processId String
+  machine   MachineCatalog   @relation(fields: [machineId], references: [id])
+  machineId String
+
+  @@id([processId, machineId])
+}
+
+model ProcessMaterial {
+  process    ProcessesCatalog @relation(fields: [processId], references: [id])
+  processId  String
+  material   MaterialCatalog  @relation(fields: [materialId], references: [id])
+  materialId String
+
+  @@id([processId, materialId])
+}
+
+model OperationsOnMachines {
+  operation   OperationsCatalog @relation(fields: [operationId], references: [id])
+  operationId String // relation scalar field (used in the `@relation` attribute above)
+  machine     MachineCatalog    @relation(fields: [machineId], references: [id])
+  machineId   String // relation scalar field (used in the `@relation` attribute above)
+
+  @@id([operationId, machineId])
+}
+
+model MaterialCatalog {
+  id              String            @id @default(cuid())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  organization    Organization      @relation(fields: [organizationId], references: [id])
+  organizationId  String
+  name            String
+  rate            Int?
+  units           String?
+  processMaterial ProcessMaterial[]
+}
+
+model PartsLibrary {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+}
+
+model ProductsCatalog {
+  id             String       @id @default(cuid())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  name           String?
+  pricingRules   Json?
+  units          String?
+  unitCost       Int?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  rfqs           Rfq[]
+  rfqIds         String[]
+  salesOrders    SalesOrder[]
+  salesOrderIds  String[]
+}
+
+enum NotificationPurpose {
+  RfqCreated
+  OrderCreated
+  ChatMention
+  InviteAccepted
+  CustomerPortalViewed
+  CustomerPortalFileViewed
+}
+
+model Taxes {
+  id             String       @id @default(cuid())
+  type           TaxType      @default(SalesTax)
+  region         String
+  description    String?
+  rate           Decimal
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+}
+
+enum TaxType {
+  SalesTax
+  GST
+  VAT
+  Custom
+}

@@ -1,0 +1,56 @@
+name: Cypress Tests
+
+on: push
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-22.04
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Checkout 🛎
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20" # or any version you prefer
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Write the cypress.env.json file 📝
+        # use quotes around the secret, as its value
+        # is simply inserted as a string into the command
+        run: |
+          echo '${{ secrets.CYPRESS_ENV_CI }}' > cypress.env.json
+
+      - name: Run Prisma Migrate
+        run: npx prisma migrate deploy
+
+      # - name: Seed the database 🌱
+      #   run: npx prisma db seed
+
+      - name: Cypress run 🚀
+        uses: cypress-io/github-action@v5
+        with:
+          build: yarn build
+          start: yarn start
+          browser: chrome
+          record: true
+          spec: cypress/e2e/login.cy.ts
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: "http://127.0.0.1:3000"
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          AUTH0_ISSUER: ${{ secrets.AUTH0_ISSUER }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          NEXT_PUBLIC_GROWTHBOOK_API_HOST: ${{ secrets.NEXT_PUBLIC_GROWTHBOOK_API_HOST }}
+          NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY }}
+          NEXT_PUBLIC_GROWTHBOOK_DECRYPTION_KEY: ${{ secrets.NEXT_PUBLIC_GROWTHBOOK_DECRYPTION_KEY }}
+          AUTH0_TEST_EMAIL: ${{ secrets.AUTH0_TEST_EMAIL }}
+          AUTH0_TEST_PASSWORD: ${{ secrets.AUTH0_TEST_PASSWORD }}

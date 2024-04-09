@@ -1,0 +1,56 @@
+{
+  "Customer Information": {
+    "PI Date": "date",
+    "PI Number": "string",
+    "Customer code": "string",
+    "Buyer Order Number": "string"
+  },
+  "Shipping Information": {
+    "INCO": "string",
+    "BL Date": "date",
+    "BL Number": "string",
+    "ETA (Port)": "date",
+    "Sailing Date": "date",
+    "Shipping line": "string",
+    "Vessel Number": "string",
+    "Clearing Agent": "string",
+    "Container Type": [
+      "Refrigerated container",
+      "Tank container",
+      "Tunnel",
+      "Flat rack",
+      "40' High cube container",
+      "Storage tank",
+      "Insulated or thermal containers",
+      "Insulated shipping container",
+      "Swap body",
+      "Double Door container",
+      "Cargo Storage roll Containers",
+      "Intermediate Bulk shift containers",
+      "Iso reefer containers",
+      "Double door containers",
+      "Hard top container",
+      "Pallet Wide container",
+      "ISO reefer container",
+      "ISO tank container",
+      "Standard containers"
+    ],
+    "Total Number of Containers": "string",
+    "Movement Status": "string",
+    "Port of Loading": "string",
+    "Shipment Status": "string",
+    "Container Number": "string",
+    "Port of Discharge": "string",
+    "Ship Invoice Date": "date",
+    "Ship Invoice Number": "string",
+    "ETA (Road / Final Dest)": "date",
+    "Final place of delivery": "string",
+    "Expected date of departure": "date",
+    "Tracking Link": "link"
+  },
+  "Payment & Delivery Details": {
+    "Delivery Date": "date",
+    "Payment Terms": "string",
+    "Payment Status": "string"
+  }
+}
