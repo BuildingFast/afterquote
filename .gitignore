@@ -8,6 +8,9 @@
 # testing
 /coverage
 
+/apps/*/node_modules
+/apps/*/.next/
+
 # database
 /prisma/db.sqlite
 /prisma/db.sqlite-journal

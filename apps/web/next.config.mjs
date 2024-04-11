@@ -14,7 +14,7 @@ const config = {
         new CopyPlugin({
           patterns: [
             {
-              from: './node_modules/occt-import-js/dist/occt-import-js.wasm',
+              from: '../../node_modules/occt-import-js/dist/occt-import-js.wasm',
               to: 'static/chunks/occt-import-js.wasm',
             },
           ],
