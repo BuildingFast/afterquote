@@ -1,8 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-import { env } from "@/env.mjs"
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -16,7 +14,7 @@ export function formatDate(input: string | number): string {
   })
 }
 
-export function absoluteUrl(path: string) {
-  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-member-access
-  return `${env.NEXT_PUBLIC_APP_URL}${path}`
-}
+// export function absoluteUrl(path: string) {
+//   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-member-access
+//   return `${NEXT_PUBLIC_APP_URL}${path}`
+// }

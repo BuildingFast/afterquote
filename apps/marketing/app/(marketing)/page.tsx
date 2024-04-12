@@ -1,21 +1,21 @@
-"use client"
-import Image from "next/image"
-import { getCalApi } from "@calcom/embed-react"
+"use client";
 
-import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
+import { getCalApi } from "@calcom/embed-react";
+import Image from "next/image";
+import { useEffect } from "react";
 
 export default function IndexPage() {
   useEffect(() => {
     void (async function () {
-      const cal = await getCalApi()
+      const cal = await getCalApi();
       cal("ui", {
         styles: { branding: { brandColor: "#000000" } },
         hideEventTypeDetails: false,
         layout: "month_view",
-      })
-    })()
-  }, [])
+      });
+    })();
+  }, []);
   return (
     <>
       <section className="relative space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-24">
@@ -41,7 +41,6 @@ export default function IndexPage() {
           </div>
           <div>
             <Image
-              className=""
               src={"/images/hero-illustration.png"}
               width={1000}
               height={1000}
@@ -49,8 +48,6 @@ export default function IndexPage() {
             />
           </div>
         </div>
-        {/* <div className="container flex max-w-[80rem] flex-col items-center gap-4 text-center">
-        </div> */}
       </section>
       {/*<section>
         <div className="relative flex items-center justify-center">
@@ -222,5 +219,5 @@ export default function IndexPage() {
         </div>
       </section>*/}
     </>
-  )
+  );
 }
